@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import io
+import sys
 from collections import deque
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -69,3 +71,23 @@ def make_app():
         return App(prompter, console=console, settings=Settings(), clear=False), prompter, out
 
     return _make
+
+
+sys.path.insert(0, str(Path(__file__).parent))
+import synthetic  # noqa: E402
+
+
+@pytest.fixture(scope="session")
+def clean_ds(tmp_path_factory) -> Path:
+    return synthetic.make_clean(tmp_path_factory.mktemp("clean"), per_class=40)
+
+
+@pytest.fixture(scope="session")
+def defect_ds(tmp_path_factory) -> tuple[Path, dict[str, list[str]]]:
+    root = tmp_path_factory.mktemp("defect")
+    return root, synthetic.make_defective(root)
+
+
+@pytest.fixture(scope="session")
+def shortcut_ds(tmp_path_factory) -> Path:
+    return synthetic.make_shortcut(tmp_path_factory.mktemp("shortcut"))

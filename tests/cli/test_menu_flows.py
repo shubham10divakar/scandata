@@ -54,7 +54,6 @@ def test_scan_wizard_keeps_values_when_going_back(make_app, tmp_path):
         "label:Dataset folder", str(tmp_path),
         "label:Advanced options", "label:Target size", "224", BACK,
         "label:Review & run",
-        "label:▶ Run scan",
         "label:✎ Edit options",
         BACK,               # wizard -> main
         "label:1. Scan a dataset",
@@ -64,9 +63,52 @@ def test_scan_wizard_keeps_values_when_going_back(make_app, tmp_path):
     app.run(MainMenu())
     assert app.options.path == tmp_path
     assert app.options.target_size == 224
+    assert "--target-size 224" in out.getvalue()
+
+
+def test_scan_from_menu_then_browse_results(make_app, defect_ds, tmp_path):
+    root, _ = defect_ds
+    opened = []
+    app, prompter, out = make_app([
+        "label:1. Scan a dataset",
+        "label:Dataset folder", str(root),
+        "label:Output report", str(tmp_path / "scandata_report.md"),
+        "label:Review & run",
+        "label:▶ Run scan",
+        # Results screen
+        "label:Fix these first",
+        "label:BLOCKER",            # first blocker
+        "label:Next finding",
+        BACK,                       # detail -> list
+        BACK,                       # list -> results
+        "label:Browse findings by section",
+        "label:B. Leakage",
+        "label:BLOCKER",
+        HOME,
+        "label:2. Results",
+        "label:Open the Markdown report",
+        BACK,
+        "exit",
+    ])
+    app.opener = opened.append
+    app.run(MainMenu())
     text = out.getvalue()
-    assert "Not built yet" in text
-    assert "--target-size 224" in text
+    assert app.last_report is not None
+    assert app.last_report.verdict == "NOT READY"
+    assert "NOT READY" in text and "Fix:" in text
+    assert opened and opened[0].endswith("scandata_report.md")
+    assert (tmp_path / "scandata_report.md").is_file()
+
+
+def test_recent_scans_lists_finished_scans(make_app, clean_ds, tmp_path):
+    import scandata
+
+    scandata.scan(clean_ds, write=True, out=tmp_path / "scandata_report.md")
+    opened = []
+    app, prompter, _ = make_app(["label:4. Recent scans", "label:20", BACK, "exit"])
+    app.opener = opened.append
+    app.run(MainMenu())
+    assert opened and opened[0].endswith("scandata_report.md")
 
 
 def test_review_is_disabled_until_folder_chosen(make_app):

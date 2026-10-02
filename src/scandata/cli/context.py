@@ -12,7 +12,7 @@ from rich.panel import Panel
 from scandata.cli.banner import credit, render_banner
 from scandata.cli.navigator import Exit, Home, NavAction, Navigator, Pop, Screen, Stay
 from scandata.cli.prompter import Option, Prompter
-from scandata.cli.theme import BRAND, make_console, symbol
+from scandata.cli.theme import BRAND, make_console, open_path, symbol
 from scandata.core.config import Settings
 from scandata.core.options import DEFAULT_OUT, ScanOptions
 
@@ -35,8 +35,9 @@ class App:
         self.clear = clear
         self.debug = debug
         self.options = self.fresh_options()
-        self.last_report: Any = None  # set by the engine from Phase 1
+        self.last_report: Any = None  # Report from the most recent scan
         self.nav: Navigator | None = None
+        self.opener = open_path  # opens files with the OS default app (swappable in tests)
 
     def fresh_options(self) -> ScanOptions:
         return ScanOptions(

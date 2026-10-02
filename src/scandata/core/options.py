@@ -52,6 +52,13 @@ class ScanOptions:
             raise OptionsError(f"Data type {self.type} is {DATA_TYPES[self.type]}.")
         if self.mode not in MODES:
             raise OptionsError(f"Mode must be one of {', '.join(MODES)}")
+        if self.mode == "deep":
+            raise OptionsError("Deep mode (embeddings, mislabel detection) arrives in v0.2. "
+                               "Use --mode fast.")
+        if self.target_size is not None and self.target_size < 8:
+            raise OptionsError("--target-size must be at least 8 px")
+        if self.sample is not None and self.sample < 1:
+            raise OptionsError("--sample must be at least 1")
         if self.device not in DEVICES:
             raise OptionsError(f"Device must be one of {', '.join(DEVICES)}")
         if self.fail_on is not None and self.fail_on not in FAIL_ON:

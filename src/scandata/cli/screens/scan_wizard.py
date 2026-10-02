@@ -6,12 +6,14 @@ from pathlib import Path
 
 from scandata import api
 from scandata.cli.context import App
-from scandata.cli.navigator import NavAction, Pop, Push, Stay
+from scandata.cli.navigator import NavAction, Pop, Push, Replace, Stay
 from scandata.cli.prompter import Option
 from scandata.cli.screens.advanced import AdvancedOptions
 from scandata.cli.screens.validators import is_dir, not_blank
-from scandata.cli.views import command_panel, engine_pending, options_table
+from scandata.cli.views import ScanProgress, command_panel, options_table
+from scandata.core.config import ConfigError
 from scandata.core.options import DATA_TYPES, OptionsError
+from scandata.loaders.image_folder import LoaderError
 
 
 def field(name: str, value: object) -> str:
@@ -98,10 +100,12 @@ class ReviewScreen:
             return Pop()
 
         try:
-            app.last_report = api.run(app.options)
-        except OptionsError as exc:
-            app.info(str(exc), style="red", title="Can't start the scan")
-        except api.EngineNotReadyError:
-            app.console.print(engine_pending(app.options))
-        app.prompter.pause()
-        return Stay()
+            with ScanProgress(app.console) as progress:
+                app.last_report = api.run(app.options, progress=progress)
+        except (OptionsError, LoaderError, ConfigError) as exc:
+            app.info(str(exc), style="red", title="Can't run the scan")
+            app.prompter.pause()
+            return Stay()
+        from scandata.cli.screens.results import ResultsScreen
+
+        return Replace(ResultsScreen())

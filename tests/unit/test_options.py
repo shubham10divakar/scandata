@@ -24,9 +24,32 @@ def test_validate(tmp_path):
         ScanOptions(path=tmp_path, mode="turbo").validate()
 
 
-def test_python_api_reports_engine_pending(tmp_path):
-    with pytest.raises(NotImplementedError):
-        scandata.scan(tmp_path, type="image-cls")
+def test_python_api_returns_report_without_writing(clean_ds, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    report = scandata.scan(clean_ds, type="image-cls")
+    assert report.verdict in ("READY", "READY WITH CAVEATS")
+    assert len(report.index) == 80
+    assert not (tmp_path / "scandata_report.md").exists()
+    assert report.findings(severity="blocker") == []
+    path = report.to_markdown(tmp_path / "r.md")
+    assert "# ScanData report" in path.read_text(encoding="utf-8")
+
+
+def test_deep_mode_is_not_available_yet(tmp_path):
+    with pytest.raises(OptionsError, match="v0.2"):
+        ScanOptions(path=tmp_path, mode="deep").validate()
+
+
+def test_registry_matches_catalog():
+    from scandata.core.registry import all_checks
+
+    registered = all_checks()
+    catalog = {c.id: c for c in list_checks()}
+    assert set(registered) <= set(catalog)
+    fast_planned = {cid for cid, c in catalog.items() if not c.deep_only}
+    assert fast_planned == set(registered), fast_planned ^ set(registered)
+    for cid, cls in registered.items():
+        assert cls.section == catalog[cid].section
 
 
 def test_catalog_is_consistent():

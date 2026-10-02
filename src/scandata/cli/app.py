@@ -12,8 +12,22 @@ from scandata import __version__, api
 from scandata.checks.catalog import SECTIONS, get_check, list_checks
 from scandata.cli.banner import render_compact
 from scandata.cli.theme import is_interactive, make_console
-from scandata.cli.views import check_panel, checks_table, engine_pending
+from scandata.cli.views import (
+    ScanProgress,
+    check_panel,
+    checks_table,
+    fix_first_lines,
+    outputs_lines,
+    scorecard_table,
+    verdict_panel,
+)
+from scandata.core.config import ConfigError
+from scandata.core.finding import Severity
 from scandata.core.options import DATA_TYPES, DEVICES, FAIL_ON, MODES, OptionsError, ScanOptions
+from scandata.loaders.image_folder import LoaderError
+
+# Problems with the user's input: reported as a one-line error, exit code 2.
+INPUT_ERRORS = (OptionsError, LoaderError, ConfigError)
 
 DataType = Enum("DataType", {t: t for t in DATA_TYPES}, type=str)
 Mode = Enum("Mode", {m: m for m in MODES}, type=str)
@@ -102,6 +116,8 @@ def scan(
     ),
     seed: int = typer.Option(42, help="Seed for sampling and probes."),
     device: Device = typer.Option(Device.auto, help="Deep-mode device."),
+    workers: int | None = typer.Option(None, help="Worker processes (default: up to 8)."),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Recompute every image's features."),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="No banner."),
 ) -> None:
     """Scan a dataset folder and write a report."""
@@ -114,13 +130,30 @@ def scan(
         fail_on=_val(fail_on), seed=seed, device=_val(device),
     )
     try:
-        api.run(options)
-    except OptionsError as exc:
+        with ScanProgress(console) as progress:
+            report = api.run(options, progress=progress, use_cache=not no_cache, workers=workers)
+    except INPUT_ERRORS as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(EXIT_TOOL_ERROR) from None
-    except api.EngineNotReadyError:
-        console.print(engine_pending(options))
+    except Exception as exc:
+        if ctx.obj.debug:
+            raise
+        console.print(f"[red]ScanData failed:[/red] {type(exc).__name__}: {exc}")
+        console.print("[dim]Run with --debug for the full traceback.[/dim]")
         raise typer.Exit(EXIT_TOOL_ERROR) from None
+
+    console.print(verdict_panel(report))
+    console.print(scorecard_table(report))
+    fixes = fix_first_lines(report)
+    if fixes:
+        console.print("\n[bold]Fix these first[/bold]")
+        for line in fixes:
+            console.print(line)
+    console.print()
+    for line in outputs_lines(report):
+        console.print(line)
+    if fail_on is not None and report.worst >= Severity.parse(fail_on.value):
+        raise typer.Exit(EXIT_FAIL_ON)
 
 
 @app.command("list-checks")

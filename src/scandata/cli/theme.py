@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
+from pathlib import Path
 
 from rich.console import Console
 
@@ -36,3 +38,14 @@ def symbol(console: Console, fancy: str, plain: str) -> str:
 
 def is_interactive() -> bool:
     return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def open_path(path: str | Path) -> None:
+    """Open a file with the OS default app."""
+    path = str(path)
+    if sys.platform.startswith("win"):
+        os.startfile(path)  # noqa: S606
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
