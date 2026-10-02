@@ -10,7 +10,7 @@ import pandas as pd
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import chi2_contingency
 
-from scandata.analysis.duplicates import DupResult, find_duplicates
+from scandata.analysis.duplicates import DupResult, find_duplicates, pixel_verifier
 from scandata.analysis.grids import save_pairs
 from scandata.analysis.probes import probe, single_feature_auc
 from scandata.checks.image_cls._util import (
@@ -36,7 +36,11 @@ def duplicates(ctx: ScanContext) -> tuple[pd.DataFrame, DupResult]:
     def compute():
         df = ctx.index.readable
         blank = (df["contrast"] < ctx.t["blank_std"]) | (df["entropy"] < ctx.t["blank_entropy"])
-        return df, find_duplicates(df, int(ctx.t["near_dup_hamming"]), exclude=blank)
+        return df, find_duplicates(
+            df, int(ctx.t["near_dup_hamming"]), exclude=blank,
+            dhash_threshold=int(ctx.t["near_dup_dhash"]),
+            verify=pixel_verifier(df["path"].tolist(), float(ctx.t["near_dup_edge_corr"])),
+        )
 
     return ctx.memo("duplicates", compute)
 

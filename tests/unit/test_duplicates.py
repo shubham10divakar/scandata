@@ -48,3 +48,38 @@ def test_excluded_rows_skip_near_dup_search():
     df = pd.DataFrame({"sha256": ["a", "b", "c"], "phash": [5, 5, 5]})
     res = find_duplicates(df, threshold=6, exclude=pd.Series([True, True, False]))
     assert res.n_components == 0
+
+
+def test_dhash_must_confirm_phash_match():
+    # rows 0/1 share a pHash but differ in 20 dHash bits (look-alikes, e.g. two leaves on one
+    # background); rows 2/3 are a pHash-near pair that dHash confirms
+    df = pd.DataFrame({
+        "sha256": ["a", "b", "c", "d"],
+        "phash": [0, 0, 2**64 - 1, 2**64 - 2],
+        "dhash": [0, 2**20 - 1, 5, 7],
+    })
+    res = find_duplicates(df, threshold=6, dhash_threshold=10)
+    assert {(int(a), int(b)) for a, b, _ in res.near_pairs} == {(2, 3)}
+    assert res.component[0] == res.component[1] == -1
+    assert res.n_components == 1
+
+
+def test_dhash_keeps_byte_identical_files():
+    df = pd.DataFrame({"sha256": ["a", "a"], "phash": [0, 2**64 - 1], "dhash": [0, 2**64 - 1]})
+    res = find_duplicates(df, threshold=6, dhash_threshold=10)
+    assert res.n_components == 1
+
+
+def test_pixel_verifier_rejects_lookalikes(tmp_path):
+    from PIL import Image
+
+    from scandata.analysis.duplicates import pixel_verifier
+
+    rng = np.random.default_rng(0)
+    texture = rng.integers(0, 256, (128, 128), dtype=np.uint8)
+    Image.fromarray(texture).save(tmp_path / "a.png")
+    Image.fromarray(texture).resize((96, 96)).save(tmp_path / "a_small.jpg", quality=70)
+    Image.fromarray(rng.integers(0, 256, (128, 128), dtype=np.uint8)).save(tmp_path / "b.png")
+    paths = [str(tmp_path / n) for n in ("a.png", "a_small.jpg", "b.png")]
+    keep = pixel_verifier(paths, 0.65)(np.array([[0, 1, 2], [0, 2, 2]]))
+    assert keep.tolist() == [True, False]

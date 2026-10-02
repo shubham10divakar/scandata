@@ -6,7 +6,7 @@ Dataset scanning for image classification (fast mode).
 
 - Reads class-folder, split-folder and CSV-manifest datasets; nested folders become domains; `--group-regex` extracts source IDs.
 - 30 checks across integrity, leakage, labels, quality, shortcuts and baselines, each with a severity, evidence and a fix.
-- Near-duplicate detection across splits (perceptual hashes), label conflicts, source-group leakage and train/test distribution shift.
+- Near-duplicate detection across splits (perceptual hashes), label conflicts, source-group leakage and train/test distribution shift. A pHash match must be confirmed by dHash (`near_dup_dhash`) and by a pixel check (`near_dup_edge_corr`), so look-alike objects on a plain background aren't reported as copies.
 - Shortcut probes: can metadata, filenames, global color or the background alone predict the label?
 - Markdown report with verdict, scorecard, fix-first list, thumbnail grids, dataset card and reproducibility details; `findings.json`; per-image `index.csv`; duplicate-cluster review CSV.
 - `suggested_splits.csv`: group-aware, stratified, duplicate-safe train/val/test split.

@@ -69,7 +69,7 @@ CHECKS: dict[str, list[CheckInfo]] = {
            "sha256 groups, reported within-split and cross-split",
            "Cross-split BLOCKER, within WARN"),
         _C("leak.near_dup", "leakage", "Resized, recompressed or slightly cropped copies",
-           "pHash Hamming <= 6/64; BK-tree search",
+           "pHash Hamming <= 6/64, confirmed by dHash <= 10/64 and pixel edge correlation >= 0.65",
            "Cross-split BLOCKER if > 0.5% of test, else WARN"),
         _C("leak.semantic_dup", "leakage", "Same scene or object from a different shot",
            "Embedding cosine >= 0.95; FAISS k-NN (k=5)",

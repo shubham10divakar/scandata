@@ -163,6 +163,8 @@ Thresholds can be overridden with `--config`:
 ```yaml
 thresholds:
   near_dup_hamming: 6        # pHash bits that may differ for a near-duplicate
+  near_dup_dhash: 10         # dHash bits that may differ (confirms the pHash match)
+  near_dup_edge_corr: 0.65   # pixel check: edge correlation a near-duplicate must reach
   imbalance_warn: 10
   shortcut_auc_warn: 0.70
 checks:

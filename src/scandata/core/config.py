@@ -10,6 +10,8 @@ from pathlib import Path
 # Every threshold is overridable via --config YAML (Phase 1). Values from the design doc.
 DEFAULT_THRESHOLDS: dict[str, float] = {
     "near_dup_hamming": 6,
+    "near_dup_dhash": 10,
+    "near_dup_edge_corr": 0.65,
     "near_dup_pct_test_block": 0.5,
     "semantic_dup_cosine": 0.95,
     "imbalance_warn": 10,
