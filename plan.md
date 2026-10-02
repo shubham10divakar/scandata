@@ -284,26 +284,43 @@ Goal: `pip install -e .` works and `scandata` shows the banner and a fully navig
 
 **Done when:** a fresh venv → `pip install -e .` → `scandata` opens the menu, every menu item is reachable, and Back / Main menu work from every screen.
 
-### Phase 1: v0.1 core engine (design §14 build order)
+### Phase 1: v0.1 core engine (design §14 build order) 🚧 steps 1–7 done (2026-10-02)
 
-1. `DatasetIndex` + image-folder loader (layouts A/B) + manifest loader (C) + `file_meta` / `decode` extractors + cache
-2. Integrity checks + Markdown reporter skeleton (verdict, scorecard, findings)
-3. Hashes + exact and near-dup + label conflict + cross-split logic
-4. Label distribution, coverage and stratification checks
-5. Pixel stats + quality checks + normalisation snippet
-6. Shortcut probes (metadata, filename, thumbnail, border)
-7. Group leakage + `suggested_splits.csv`
-8. Synthetic benchmark for 2–7 → tune default thresholds
-9. First real report on SDNET2018
+1. ✅ `DatasetIndex` + image-folder loader (layouts A/B) + manifest loader (C) + `file_meta` / `decode` extractors + cache
+2. ✅ Integrity checks + Markdown reporter skeleton (verdict, scorecard, findings)
+3. ✅ Hashes + exact and near-dup + label conflict + cross-split logic
+4. ✅ Label distribution, coverage and stratification checks
+5. ✅ Pixel stats + quality checks + normalisation snippet
+6. ✅ Shortcut probes (metadata, filename, thumbnail, border)
+7. ✅ Group leakage + `suggested_splits.csv`
+8. 🚧 Synthetic benchmark: defect, shortcut and clean datasets exist as tests (every injected defect found; no false alarms on clean data). Still to do: injection at controlled rates, precision/recall per check, threshold tuning.
+9. ⏳ First real report on SDNET2018 (needs the dataset on this machine)
 
-As each piece lands, the matching menu screen switches from stub to real: **Scan wizard** after step 2, **Results / Browse findings** after step 2, **Browse checks** reads live from the check registry after step 2.
+The menu screens are live: **Scan wizard** runs the engine with a progress bar, **Results** shows verdict, scorecard, fix-first list and findings by section, **Recent scans** reopens reports.
 
-### Phase 2: CLI polish
+**Measured:** 10,000 images (128 px, 16-core laptop): about 45 s cold, about 6.5 s warm (cached features). Design target was 50k images in under 5 minutes in fast mode.
 
-- Rich progress bars per extractor pass (files/sec, ETA)
-- Live scorecard at the end of a scan, then the Results screen
-- `Recent scans` history and reopening old reports
-- `--fail-on` and `--json` for CI, exit codes 0/1/2
+#### Implementation decisions (where the build differs from the design doc)
+
+| Design | Built | Why |
+|---|---|---|
+| OpenCV, `imagehash`, jinja2, matplotlib | numpy implementations of pHash/dHash, Laplacian and Sobel; report built in Python; grids drawn with Pillow | Smaller install, no compiled extras beyond numpy/scipy/sklearn |
+| Cache keyed by `sha256 + extractor version` | Keyed by path + size + mtime + extractor version + target size, in `~/.scandata/cache` | A lookup doesn't need to read the file; nothing is written into the dataset folder |
+| `short.metadata` includes file size | File size reported as a note, not scored | File size grows with image detail, so it separates classes whenever content differs (e.g. cracks). It caused false BLOCKERs on synthetic crack data |
+| `short.filename` on raw basenames | Per-class naming tokens (`cat` in `cat.123.jpg`, `cr` in `cr0001.jpg`) are stripped first and listed in the report | Naming files by class is normal and invisible to the model; without this nearly every dataset got a BLOCKER |
+| Thumbnail/border probes with gradient boosting | Scaled logistic regression | About 20x faster, still catches background and color shortcuts |
+| (not in design) | BLAS/OpenMP threads capped at 4 while checks run | numpy and scipy each start an OpenBLAS pool; on 16 cores they oversubscribed and a 0.5 s probe took 27 s |
+| (not in design) | Adversarial validation skipped when a split has under 50 images | AUCs on a handful of images are noise and produced false WARNs |
+| `--sample` limits stats checks only | `--sample` applies to the whole scan | Hashes come from the same decode pass as the stats, so sampling only stats saves nothing |
+| `index.parquet` | `index.csv` | Avoids a pyarrow dependency for now |
+
+### Phase 2: CLI polish (mostly built during Phase 1)
+
+- ✅ Progress bar with ETA during extraction and checks
+- ✅ Verdict and scorecard at the end of a scan, then the Results screen
+- ✅ `Recent scans` history and reopening old reports
+- ✅ `--fail-on` and `--json` for CI, exit codes 0/1/2
+- ⏳ Export JSON / suggested splits from the Results screen; settings for workers and cache
 
 ### Phase 3: First PyPI release (`scandata 0.1.0`)
 
