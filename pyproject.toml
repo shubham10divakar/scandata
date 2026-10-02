@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "scandata"
+dynamic = ["version"]
+description = "Audit your dataset before you train on it: leakage, label issues, shortcuts and quality, in one report."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Subham Divakar", email = "shubham.divakar@gmail.com" }]
+keywords = ["eda", "dataset", "data-quality", "machine-learning", "leakage", "audit"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# Phase 0: CLI dependencies only. Engine dependencies are added as Phase 1 lands.
+dependencies = [
+  "typer>=0.12",
+  "rich>=13",
+  "questionary>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov", "ruff", "build", "twine"]
+
+[project.scripts]
+scandata = "scandata.cli.app:main"
+
+[tool.hatch.version]
+path = "src/scandata/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scandata"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Argument", "typer.Option"]
