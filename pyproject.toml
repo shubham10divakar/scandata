@@ -5,13 +5,16 @@ build-backend = "hatchling.build"
 [project]
 name = "scandata"
 dynamic = ["version"]
-description = "Audit your dataset before you train on it: leakage, label issues, shortcuts and quality, in one report."
+description = "Audit your ML dataset before you train on it: leakage, label issues, shortcuts and quality."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "Subham Divakar", email = "shubham.divakar@gmail.com" }]
-keywords = ["eda", "dataset", "data-quality", "machine-learning", "leakage", "audit"]
+authors = [{ name = "Subham Divakar" }]
+keywords = [
+  "eda", "dataset", "data-quality", "machine-learning", "computer-vision",
+  "data-leakage", "audit", "cli",
+]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Environment :: Console",
@@ -19,9 +22,16 @@ classifiers = [
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Image Recognition",
+  "Topic :: Utilities",
 ]
-# Phase 0: CLI dependencies only. Engine dependencies are added as Phase 1 lands.
 dependencies = [
   "typer>=0.12",
   "rich>=13",
@@ -31,11 +41,20 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov", "ruff", "build", "twine"]
 
+[project.urls]
+Homepage = "https://github.com/shubham10divakar/scandata"
+Repository = "https://github.com/shubham10divakar/scandata"
+Issues = "https://github.com/shubham10divakar/scandata/issues"
+Changelog = "https://github.com/shubham10divakar/scandata/blob/main/CHANGELOG.md"
+
 [project.scripts]
 scandata = "scandata.cli.app:main"
 
 [tool.hatch.version]
 path = "src/scandata/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/scandata", "tests", "README.md", "LICENSE", "CHANGELOG.md", "pyproject.toml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/scandata"]
